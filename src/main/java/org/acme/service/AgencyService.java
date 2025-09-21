@@ -1,5 +1,6 @@
 package org.acme.service;
 
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -27,13 +28,18 @@ public class AgencyService {
     public void register(Agency agency) throws InactiveAgencyException, AgencyNotFoundException {
         HttpAgency httpAgency = registrationStatusHttpService.findByRegistrationNumber(agency.getRegistrationNumber());
 
-        if (httpAgency == null)
+        if (httpAgency == null) {
+            Log.warn("Not found agency by registrationNumber " + agency.getRegistrationNumber());
             throw new AgencyNotFoundException();
+        }
 
-        if (httpAgency.getRegistrationStatus() == RegistrationStatus.INACTIVE)
+        if (httpAgency.getRegistrationStatus() == RegistrationStatus.INACTIVE) {
+            Log.warn("Agency with registrationNumber " + agency.getRegistrationNumber() + " is inactive");
             throw new InactiveAgencyException();
+        }
 
         agencyRepository.persist(agency);
+        Log.info("Persisted " + agency);
     }
 
     public Optional<Agency> findById(Long id) {
@@ -42,11 +48,13 @@ public class AgencyService {
 
     @Transactional
     public void deleteById(Long id) {
+        Log.info("Deleting agency by id " + id);
         agencyRepository.deleteById(id);
     }
 
     @Transactional
     public void update(Agency agency) throws AgencyNotFoundException, InactiveAgencyException {
+        Log.info("Updating " + agency);
         agencyRepository.update(
                 "name = ?1, corporateName = ?2, registrationNumber = ?3 where id = ?4",
                 agency.getName(), agency.getCorporateName(), agency.getRegistrationNumber(), agency.getId()

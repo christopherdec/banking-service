@@ -3,7 +3,6 @@ package org.acme.service;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import org.acme.domain.Address;
 import org.acme.domain.Agency;
 import org.acme.domain.http.HttpAgency;
 import org.acme.domain.http.RegistrationStatus;
@@ -11,6 +10,7 @@ import org.acme.exception.AgencyNotFoundException;
 import org.acme.exception.InactiveAgencyException;
 import org.acme.repository.AgencyRepository;
 import org.acme.service.http.RegistrationStatusHttpService;
+import org.acme.utils.AgencyFixture;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,19 +38,11 @@ public class AgencyServiceTest {
 
     @BeforeEach
     void setUp() {
-        testAgency = createAgency();
-        activeHttpAgency = createHttpAgency(RegistrationStatus.ACTIVE);
-        inactiveHttpAgency = createHttpAgency(RegistrationStatus.INACTIVE);
+        testAgency = AgencyFixture.createAgency();
+        activeHttpAgency = AgencyFixture.createHttpAgency(RegistrationStatus.ACTIVE);
+        inactiveHttpAgency = AgencyFixture.createHttpAgency(RegistrationStatus.INACTIVE);
     }
 
-    private Agency createAgency() {
-        Address address = new Address("123 Main St", "Floripa", "Santa Catarina", "88080000", "Brazil");
-        return new Agency(1L, "Agency", "Agency GmbH", "1234567890", address);
-    }
-
-    private HttpAgency createHttpAgency(RegistrationStatus registrationStatus) {
-        return new HttpAgency("Agency", "Agency GmbH", "1234567890", registrationStatus);
-    }
 
     @Test
     void register_shouldThrowAgencyNotFoundException_whenExternalServiceReturnsNull() {
