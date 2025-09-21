@@ -1,12 +1,37 @@
 services:
-  postgres-db-banking-service:
+  postgres:
     image: postgres:17.6
-    container_name: postgres-db-banking-service
+    container_name: postgres
     environment:
-      - POSTGRES_USER=bankingservice
-      - POSTGRES_PASSWORD=bankingservice
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=bankingservice
     ports:
       - "5433:5432"
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres-data:/var/lib/postgresql/data
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+
+volumes:
+  postgres-data:
+  grafana-storage:
