@@ -1,0 +1,12 @@
+services:
+  postgres-db-banking-service:
+    image: postgres:17.6
+    container_name: postgres-db-banking-service
+    environment:
+      - POSTGRES_USER=bankingservice
+      - POSTGRES_PASSWORD=bankingservice
+      - POSTGRES_DB=bankingservice
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql

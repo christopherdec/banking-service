@@ -30,7 +30,7 @@ public class AgencyController {
         }
     }
 
-    @POST
+    @GET
     @Path("/{id}")
     public RestResponse<Agency> get(@PathParam("id") Long id) {
         return agencyService.findById(id)
