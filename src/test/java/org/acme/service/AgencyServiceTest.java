@@ -12,8 +12,10 @@ import org.acme.exception.InactiveAgencyException;
 import org.acme.repository.AgencyRepository;
 import org.acme.service.http.RegistrationStatusHttpService;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -30,8 +32,19 @@ public class AgencyServiceTest {
     @Inject
     AgencyService agencyService;
 
+    private Agency testAgency;
+    private HttpAgency activeHttpAgency;
+    private HttpAgency inactiveHttpAgency;
+
+    @BeforeEach
+    void setUp() {
+        testAgency = createAgency();
+        activeHttpAgency = createHttpAgency(RegistrationStatus.ACTIVE);
+        inactiveHttpAgency = createHttpAgency(RegistrationStatus.INACTIVE);
+    }
+
     private Agency createAgency() {
-        Address address = new Address();
+        Address address = new Address("123 Main St", "Floripa", "Santa Catarina", "88080000", "Brazil");
         return new Agency(1L, "Agency", "Agency GmbH", "1234567890", address);
     }
 
@@ -40,29 +53,24 @@ public class AgencyServiceTest {
     }
 
     @Test
-    public void shouldNotRegisterWhenClientReturnsNull() {
-        Agency agency = createAgency();
-        when(registrationStatusHttpService.findByRegistrationNumber(agency.getRegistrationNumber())).thenReturn(null);
-        assertThrows(AgencyNotFoundException.class, () -> agencyService.register(agency));
-        verify(agencyRepository, never()).persist(agency);
+    void register_shouldThrowAgencyNotFoundException_whenExternalServiceReturnsNull() {
+        when(registrationStatusHttpService.findByRegistrationNumber(testAgency.getRegistrationNumber())).thenReturn(null);
+        assertThrows(AgencyNotFoundException.class, () -> agencyService.register(testAgency));
+        verify(agencyRepository, never()).persist(testAgency);
     }
 
     @Test
-    public void shouldNotRegisterWhenRegistrationStatusIsInactive() {
-        HttpAgency httpAgency = createHttpAgency(RegistrationStatus.INACTIVE);
-        Agency agency = createAgency();
-        when(registrationStatusHttpService.findByRegistrationNumber(agency.getRegistrationNumber())).thenReturn(httpAgency);
-        assertThrows(InactiveAgencyException.class, () -> agencyService.register(agency));
-        verify(agencyRepository, never()).persist(agency);
+    void register_shouldThrowInactiveAgencyException_whenRegistrationStatusIsInactive() {
+        when(registrationStatusHttpService.findByRegistrationNumber(testAgency.getRegistrationNumber())).thenReturn(inactiveHttpAgency);
+        assertThrows(InactiveAgencyException.class, () -> agencyService.register(testAgency));
+        verify(agencyRepository, never()).persist(testAgency);
     }
 
     @Test
-    public void shouldRegisterWhenRegistrationStatusIsActive() throws Throwable {
-        HttpAgency httpAgency = createHttpAgency(RegistrationStatus.ACTIVE);
-        Agency agency = createAgency();
-        when(registrationStatusHttpService.findByRegistrationNumber(agency.getRegistrationNumber())).thenReturn(httpAgency);
-        agencyService.register(agency);
-        verify(agencyRepository).persist(agency);
+    void register_shouldPersistAgency_whenRegistrationStatusIsActive() {
+        when(registrationStatusHttpService.findByRegistrationNumber(testAgency.getRegistrationNumber())).thenReturn(activeHttpAgency);
+        assertDoesNotThrow(() -> agencyService.register(testAgency));
+        verify(agencyRepository).persist(testAgency);
     }
 
 
