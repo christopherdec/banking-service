@@ -1,10 +1,13 @@
 package org.acme.domain;
 
 import jakarta.persistence.*;
-import lombok.Getter;
+import lombok.*;
 
-@Getter
+@Data
+@EqualsAndHashCode(of = "id")
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
 public class Agency {
 
     @Id
