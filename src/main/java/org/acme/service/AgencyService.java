@@ -1,5 +1,7 @@
 package org.acme.service;
 
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
@@ -24,22 +26,28 @@ public class AgencyService {
 
     private final AgencyRepository agencyRepository;
 
+    private final MeterRegistry meterRegistry;
+
     @Transactional
+    @Timed("agency.register")
     public void register(Agency agency) throws InactiveAgencyException, AgencyNotFoundException {
         HttpAgency httpAgency = registrationStatusHttpService.findByRegistrationNumber(agency.getRegistrationNumber());
 
         if (httpAgency == null) {
             Log.warn("Not found agency by registrationNumber " + agency.getRegistrationNumber());
+            meterRegistry.counter(AgencyMetrics.AGENCY_NOT_FOUND_COUNTER.getValue()).increment();
             throw new AgencyNotFoundException();
         }
 
         if (httpAgency.getRegistrationStatus() == RegistrationStatus.INACTIVE) {
             Log.warn("Agency with registrationNumber " + agency.getRegistrationNumber() + " is inactive");
+            meterRegistry.counter(AgencyMetrics.AGENCY_INACTIVE_COUNTER.getValue()).increment();
             throw new InactiveAgencyException();
         }
 
         agencyRepository.persist(agency);
         Log.info("Persisted " + agency);
+        meterRegistry.counter(AgencyMetrics.AGENCY_ADDED_COUNTER.getValue()).increment();
     }
 
     public Optional<Agency> findById(Long id) {
@@ -49,7 +57,12 @@ public class AgencyService {
     @Transactional
     public void deleteById(Long id) {
         Log.info("Deleting agency by id " + id);
-        agencyRepository.deleteById(id);
+        boolean deleted = agencyRepository.deleteById(id);
+        if (deleted) {
+            meterRegistry.counter(AgencyMetrics.AGENCY_DELETED_COUNTER.getValue()).increment();
+        } else {
+            meterRegistry.counter(AgencyMetrics.AGENCY_DELETE_FAILED_COUNTER.getValue()).increment();
+        }
     }
 
     @Transactional
@@ -59,5 +72,6 @@ public class AgencyService {
                 "name = ?1, corporateName = ?2, registrationNumber = ?3 where id = ?4",
                 agency.getName(), agency.getCorporateName(), agency.getRegistrationNumber(), agency.getId()
         );
+        meterRegistry.counter(AgencyMetrics.AGENCY_UPDATED_COUNTER.getValue()).increment();
     }
 }
