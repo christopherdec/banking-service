@@ -1,18 +1,4 @@
 services:
-  banking-validation:
-    image: christopherdec/banking-service:v1
-    container_name: banking-validation
-    environment:
-      - QUARKUS_CLIENT_REGISTRATION_STATUS_API_URL=172.17.0.1:8080
-      - QUARKUS_DATASOURCE_USERNAME=admin
-      - QUARKUS_DATASOURCE_PASSWORD=postgres
-      - QUARKUS_DATASOURCE_HOST=postgres
-      - QUARKUS_DATASOURCE_PORT=5432
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres
-
   postgres:
     image: postgres:17.6
     container_name: postgres
